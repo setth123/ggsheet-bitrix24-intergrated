@@ -1,0 +1,47 @@
+{
+  "fields": [
+    { "column": "Tên khách hàng", "field": "NAME", "required": true },
+    { "column": "Email", "field": "EMAIL", "type": "email" },
+    { "column": "Số điện thoại", "field": "PHONE", "type": "phone" },
+    { "column": "Công ty", "field": "COMPANY_TITLE" },
+    { "column": "Nguồn lead", "field": "UTM_SOURCE" },
+    { "column": "Ngân sách dự kiến", "field": "OPPORTUNITY", "type": "number" },
+    {
+      "column": "Trạng thái",
+      "field": "STATUS_ID",
+      "type": "enum",
+      "twoWay": true,
+      "values": {
+        "Mới": "NEW",
+        "Đang xử lý": "IN_PROCESS",
+        "Đã xử lý": "PROCESSED",
+        "Rác": "JUNK"
+      }
+    },
+    {
+      "column": "Người phụ trách",
+      "field": "ASSIGNED_BY_ID",
+      "type": "enum",
+      "twoWay": true,
+      "values": {
+        "Admin": 1
+      }
+    },
+    { "column": "Ghi chú", "field": "COMMENTS", "maxLength": 2000 }
+  ],
+  "sync": {
+    "direction": "two-way",
+    "conflictPriority": "bitrix"
+  },
+  "defaults": {
+    "CURRENCY_ID": "VND",
+    "SOURCE_ID": "OTHER"
+  },
+  "statusColumns": {
+    "status": "Trạng thái đồng bộ",
+    "leadId": "Lead ID Bitrix24",
+    "syncedAt": "Thời gian đồng bộ cuối",
+    "error": "Thông báo lỗi",
+    "hash": "Sync Hash"
+  }
+}

@@ -1,0 +1,11 @@
+Tên khách hàng,Email,Số điện thoại,Công ty,Nguồn lead,Ngân sách dự kiến,Trạng thái,Người phụ trách,Ghi chú,Trạng thái đồng bộ,Lead ID Bitrix24,Thời gian đồng bộ cuối,Thông báo lỗi,Sync Hash
+Nguyễn Văn An,an.nguyen@example.com,0912345678,Công ty ABC,website,50.000.000,Mới,Admin,Quan tâm gói Premium,,,,,
+Trần Thị Bình,binh.tran@example.com,0987 654 321,XYZ Corp,facebook,"30,000,000",Đang xử lý,Admin,Hẹn gọi lại thứ 2,,,,,
+Lê Hoàng Cường,cuong.le@example.com,+84 903 111 222,Startup DEF,event,100000000,Mới,Admin,Gặp tại hội thảo Tech Day,,,,,
+Phạm Minh Dũng,dung.pham@example.com,,Đối tác GHI,partner,20000000,Mới,Admin,Giới thiệu từ đối tác,,,,,
+Hoàng Thu Hà,,0911 222 333,,website,,Mới,Admin,Chỉ có số điện thoại,,,,,
+Vũ Đức Huy,huy.vu@example,0909000111,Công ty JKL,website,15000000,Mới,Admin,Email sai định dạng -> sẽ báo lỗi,,,,,
+Đặng Lan Anh,lananh.dang@example.com,0938 777 888,MNO Group,facebook,80000000,Không rõ,Admin,Trạng thái sai -> sẽ báo lỗi,,,,,
+,no.name@example.com,0901234567,,website,,Mới,Admin,Thiếu tên -> sẽ báo lỗi,,,,,
+Bùi Quốc Khánh,khanh.bui@example.com,0977 123 456,PQR Ltd,event,45000000,Đã xử lý,Admin,Đã gửi báo giá,,,,,
+Nguyễn Văn An (trùng),an.nguyen@example.com,,Công ty ABC,website,60000000,Mới,Admin,Trùng email với hàng 2 -> xử lý lần chạy sau,,,,,

@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheets ↔ Bitrix24 Sync</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --text: #1d2330; --muted: #667085; --border: #e2e5ea;
+    --accent: #2563eb; --accent-text: #fff; --ok: #15803d; --warn: #b45309; --err: #b91c1c; --code: #f1f3f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --card: #1a1f26; --text: #e6e8eb; --muted: #9aa3af; --border: #2b323c;
+      --accent: #60a5fa; --accent-text: #0b1220; --ok: #4ade80; --warn: #fbbf24; --err: #f87171; --code: #13171c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 1px solid var(--border); background: var(--card); }
+  h1 { font-size: 18px; margin: 0; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  nav { display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--card); overflow-x: auto; }
+  nav button { background: none; border: 0; padding: 8px 12px; border-radius: 6px; color: var(--muted); cursor: pointer; font: inherit; white-space: nowrap; }
+  nav button.active { background: var(--bg); color: var(--text); font-weight: 600; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .muted { color: var(--muted); }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
+  .pill.ok { color: var(--ok); } .pill.err { color: var(--err); } .pill.busy { color: var(--warn); }
+  .btn { background: var(--accent); color: var(--accent-text); border: 0; border-radius: 6px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); font-weight: 500; }
+  .btn.danger { background: transparent; color: var(--err); border: 1px solid var(--border); padding: 4px 8px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .stat { border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .stat b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .stat.err b { color: var(--err); } .stat.ok b { color: var(--ok); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  input, select, textarea { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; width: 100%; min-width: 0; }
+  textarea { resize: vertical; font-family: ui-monospace, monospace; font-size: 12px; }
+  .mapping-table textarea { min-width: 200px; }
+  input[type=checkbox] { width: auto; }
+  .invalid { border-color: var(--err); }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 200px; flex: 1; }
+  .msg { padding: 10px 12px; border-radius: 6px; margin-top: 12px; border: 1px solid var(--border); }
+  .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
+  pre { background: var(--code); border: 1px solid var(--border); border-radius: 8px; padding: 12px; max-height: 65vh; overflow: auto; font-size: 12px; white-space: pre-wrap; word-break: break-word; margin: 0; }
+  .log-error { color: var(--err); } .log-warn { color: var(--warn); }
+  #auth { display: none; gap: 8px; }
+  #auth input { width: 220px; }
+  @media (max-width: 700px) { .mapping-table td, .mapping-table th { min-width: 110px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>Google Sheets ↔ Bitrix24</h1>
+    <span id="state" class="pill">Đang tải…</span>
+  </div>
+  <form id="auth" class="row">
+    <input id="token" type="password" placeholder="Nhập ADMIN_TOKEN" autocomplete="current-password">
+    <button class="btn" type="submit">Đăng nhập</button>
+  </form>
+</header>
+<nav>
+  <button data-tab="overview" class="active">Tổng quan</button>
+  <button data-tab="mapping">Cấu hình mapping</button>
+  <button data-tab="logs">Nhật ký (logs)</button>
+</nav>
+
+<main>
+  <!-- Overview -->
+  <section id="tab-overview">
+    <div class="card">
+      <div class="row" style="justify-content: space-between">
+        <div>
+          <h2>Lần đồng bộ gần nhất</h2>
+          <div id="last-run" class="muted">Chưa có dữ liệu</div>
+        </div>
+        <button id="sync-btn" class="btn">Đồng bộ ngay</button>
+      </div>
+      <div id="sync-msg"></div>
+    </div>
+    <div class="card"><div id="stats" class="stats"></div></div>
+    <div class="card">
+      <h2>Hàng bị lỗi</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width: 80px">Hàng</th><th>Nguyên nhân</th></tr></thead>
+          <tbody id="errors"></tbody>
+        </table>
+      </div>
+      <p class="muted">Sửa dữ liệu trên Google Sheet, lần đồng bộ sau hàng đó sẽ được xử lý lại.</p>
+    </div>
+  </section>
+
+  <!-- Mapping -->
+  <section id="tab-mapping" hidden>
+    <div class="card">
+      <h2>Chiều đồng bộ</h2>
+      <div class="row">
+        <label class="field">Chiều đồng bộ
+          <select id="direction">
+            <option value="one-way">Một chiều: Google Sheet → Bitrix24</option>
+            <option value="two-way">Hai chiều: kéo các trường "Hai chiều" từ Bitrix24 về Sheet</option>
+          </select>
+        </label>
+        <label class="field">Khi sửa ở cả hai nơi (xung đột), ưu tiên
+          <select id="priority">
+            <option value="bitrix">Bitrix24 (giữ thay đổi của sales trên CRM)</option>
+            <option value="sheet">Google Sheet</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ánh xạ cột → trường Bitrix24</h2>
+      <p class="muted" id="options-hint">Gõ để chọn tên cột trong Sheet và mã trường Bitrix24 (gồm cả custom field UF_CRM_…).</p>
+      <div class="table-wrap">
+        <table class="mapping-table">
+          <thead>
+            <tr>
+              <th>Cột trong Sheet</th><th>Trường Bitrix24</th><th>Kiểu dữ liệu</th>
+              <th title="Thiếu giá trị thì báo lỗi">Bắt buộc</th>
+              <th title="Kéo thay đổi từ Bitrix24 về Sheet">Hai chiều</th>
+              <th title="Nhiều giá trị cách nhau bởi dấu phẩy">Nhiều giá trị</th>
+              <th>Giá trị (enum): Nhãn=MÃ</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rules"></tbody>
+        </table>
+      </div>
+      <button id="add-rule" class="btn secondary" style="margin-top: 12px">+ Thêm cột</button>
+    </div>
+
+    <div class="card">
+      <h2>Giá trị mặc định</h2>
+      <p class="muted">Gửi kèm mọi lead, mỗi dòng một giá trị dạng <code>TRƯỜNG=giá trị</code>, ví dụ <code>CURRENCY_ID=VND</code>.</p>
+      <textarea id="defaults" rows="3"></textarea>
+    </div>
+
+    <div class="row">
+      <button id="save-mapping" class="btn">Lưu cấu hình</button>
+      <button id="reload-mapping" class="btn secondary">Hoàn tác thay đổi</button>
+    </div>
+    <div id="mapping-msg"></div>
+    <datalist id="columns-list"></datalist>
+    <datalist id="fields-list"></datalist>
+  </section>
+
+  <!-- Logs -->
+  <section id="tab-logs" hidden>
+    <div class="card">
+      <div class="row" style="justify-content: space-between; margin-bottom: 12px">
+        <h2 style="margin: 0">Nhật ký gần đây</h2>
+        <select id="log-level" style="width: auto">
+          <option value="">Tất cả</option>
+          <option value="WARN|ERROR">Cảnh báo + lỗi</option>
+          <option value="ERROR">Chỉ lỗi</option>
+        </select>
+      </div>
+      <pre id="logs">Đang tải…</pre>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const STAT_LABELS = {
+  created: 'Tạo mới', updated: 'Cập nhật', duplicates: 'Trùng (đã gộp)', pulled: 'Cập nhật từ Bitrix24',
+  conflicts: 'Xung đột', skipped: 'Không đổi', failed: 'Lỗi',
+};
+const TRIGGERS = { cli: 'CLI', http: 'Thủ công', schedule: 'Theo lịch', webhook: 'Webhook Bitrix24' };
+const TYPES = { string: 'Văn bản', email: 'Email', phone: 'Số điện thoại', number: 'Số', date: 'Ngày (dd/mm/yyyy)', enum: 'Danh sách (enum)' };
+
+/** Creates a DOM element; children are appended as text nodes (safe against HTML injection). */
+function h(tag, props = {}, ...children) {
+  const el = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key.startsWith('on')) el.addEventListener(key.slice(2), value);
+    else if (key in el) el[key] = value;
+    else el.setAttribute(key, value);
+  }
+  el.append(...children.flat().filter((c) => c !== null && c !== undefined));
+  return el;
+}
+
+function showMsg(target, text, ok) {
+  $(target).replaceChildren(text ? h('div', { className: `msg ${ok ? 'ok' : 'err'}` }, text) : '');
+}
+
+// ---------- API + auth ----------
+let token = '';
+try { token = localStorage.getItem('adminToken') || ''; } catch {}
+
+async function api(method, path, body) {
+  const res = await fetch(path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) {
+    $('#auth').style.display = 'flex';
+    throw new Error('Cần đăng nhập bằng ADMIN_TOKEN');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || `Lỗi máy chủ (HTTP ${res.status})`), { data });
+  return data;
+}
+
+$('#auth').addEventListener('submit', (e) => {
+  e.preventDefault();
+  token = $('#token').value.trim();
+  try { localStorage.setItem('adminToken', token); } catch {}
+  $('#auth').style.display = 'none';
+  refresh();
+  if (!mapping) loadMapping();
+});
+
+// ---------- Tabs ----------
+let currentTab = 'overview';
+function openTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('main > section').forEach((s) => { s.hidden = s.id !== `tab-${tab}`; });
+  if (tab === 'mapping' && !mapping) loadMapping();
+  refresh();
+}
+document.querySelectorAll('nav button').forEach((btn) => btn.addEventListener('click', () => {
+  history.replaceState(null, '', `#${btn.dataset.tab}`);
+  openTab(btn.dataset.tab);
+}));
+
+// ---------- Overview ----------
+async function loadStatus() {
+  const { running, lastRun } = await api('GET', '/status');
+  const state = $('#state');
+  if (running) { state.textContent = 'Đang đồng bộ…'; state.className = 'pill busy'; }
+  else if (!lastRun) { state.textContent = 'Chưa chạy lần nào'; state.className = 'pill'; }
+  else if (lastRun.ok) { state.textContent = 'Hoạt động bình thường'; state.className = 'pill ok'; }
+  else { state.textContent = 'Lần chạy cuối thất bại'; state.className = 'pill err'; }
+  $('#sync-btn').disabled = running;
+
+  if (!lastRun) return;
+  const when = new Date(lastRun.finishedAt).toLocaleString('vi-VN');
+  $('#last-run').replaceChildren(
+    `${when} · ${TRIGGERS[lastRun.trigger] || lastRun.trigger}`,
+    lastRun.durationMs !== undefined ? ` · ${(lastRun.durationMs / 1000).toFixed(1)} giây` : '',
+    lastRun.ok ? '' : h('div', { className: 'msg err' }, lastRun.error),
+  );
+  const stats = lastRun.stats || {};
+  $('#stats').replaceChildren(...Object.entries(STAT_LABELS).map(([key, label]) => h('div', {
+    className: `stat ${key === 'failed' && stats[key] ? 'err' : key === 'created' && stats[key] ? 'ok' : ''}`,
+  }, h('b', {}, String(stats[key] ?? 0)), h('span', { className: 'muted' }, label))));
+  const errors = lastRun.errors || [];
+  $('#errors').replaceChildren(...(errors.length
+    ? errors.map((e) => h('tr', {}, h('td', {}, String(e.row)), h('td', {}, e.message)))
+    : [h('tr', {}, h('td', { colSpan: 2, className: 'muted' }, 'Không có lỗi'))]));
+}
+
+$('#sync-btn').addEventListener('click', async () => {
+  $('#sync-btn').disabled = true;
+  showMsg('#sync-msg', '');
+  try {
+    const result = await api('POST', '/sync');
+    showMsg('#sync-msg', `Xong: tạo ${result.stats.created}, cập nhật ${result.stats.updated}, lỗi ${result.stats.failed}.`, true);
+  } catch (err) {
+    showMsg('#sync-msg', err.message, false);
+  }
+  loadStatus().catch(() => {});
+});
+
+// ---------- Mapping ----------
+let mapping = null;
+
+function parsePairs(text, what) {
+  const out = {};
+  for (const line of text.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const i = line.indexOf('=');
+    if (i < 1) throw new Error(`${what}: dòng "${line}" phải có dạng Nhãn=GIÁ_TRỊ`);
+    const value = line.slice(i + 1).trim();
+    out[line.slice(0, i).trim()] = /^-?\d+$/.test(value) ? Number(value) : value;
+  }
+  return out;
+}
+const pairsToText = (obj) => Object.entries(obj || {}).map(([k, v]) => `${k}=${v}`).join('\n');
+
+function ruleRow(rule) {
+  const values = h('textarea', { name: 'values', rows: 3, value: pairsToText(rule.values), placeholder: 'Mới=NEW' });
+  const type = h('select', { name: 'type', onchange: () => { values.hidden = type.value !== 'enum'; } },
+    Object.entries(TYPES).map(([v, label]) => h('option', { value: v, selected: (rule.type || 'string') === v }, label)));
+  values.hidden = type.value !== 'enum';
+  const check = (name) => h('input', { type: 'checkbox', name, checked: !!rule[name] });
+  const tr = h('tr', {},
+    h('td', {}, h('input', { name: 'column', value: rule.column || '', placeholder: 'Tên cột', list: 'columns-list' })),
+    h('td', {}, h('input', { name: 'field', value: rule.field || '', placeholder: 'VD: NAME, UF_CRM_…', list: 'fields-list' })),
+    h('td', {}, type),
+    h('td', {}, check('required')),
+    h('td', {}, check('twoWay')),
+    h('td', {}, check('multiple')),
+    h('td', {}, values),
+    h('td', {}, h('button', { className: 'btn danger', type: 'button', title: 'Xoá dòng', onclick: () => tr.remove() }, '✕')),
+  );
+  tr.rule = rule; // keeps properties the UI doesn't edit (pattern, maxLength…)
+  return tr;
+}
+
+function renderMapping() {
+  $('#direction').value = mapping.sync?.direction || 'one-way';
+  $('#priority').value = mapping.sync?.conflictPriority || 'bitrix';
+  $('#rules').replaceChildren(...mapping.fields.map(ruleRow));
+  $('#defaults').value = pairsToText(mapping.defaults);
+}
+
+/** Reads the form back into a mapping object; throws with a readable message if incomplete. */
+function collectMapping() {
+  const problems = [];
+  const fields = [...$('#rules').children].map((tr, i) => {
+    const q = (name) => tr.querySelector(`[name=${name}]`);
+    const rule = { ...tr.rule, column: q('column').value.trim(), field: q('field').value.trim(), type: q('type').value };
+    for (const name of ['column', 'field']) {
+      q(name).classList.toggle('invalid', !rule[name]);
+      if (!rule[name]) problems.push(`Dòng ${i + 1}: chưa nhập ${name === 'column' ? 'tên cột' : 'trường Bitrix24'}`);
+    }
+    for (const name of ['required', 'twoWay', 'multiple']) {
+      if (q(name).checked) rule[name] = true; else delete rule[name];
+    }
+    if (rule.type === 'enum') rule.values = parsePairs(q('values').value, `Dòng ${i + 1}`);
+    else delete rule.values;
+    if (rule.type === 'string') delete rule.type;
+    return rule;
+  });
+  if (!fields.length) problems.push('Cần ít nhất một cột');
+  if (problems.length) throw new Error(problems.join(' · '));
+  return {
+    ...mapping,
+    fields,
+    defaults: parsePairs($('#defaults').value, 'Giá trị mặc định'),
+    sync: { direction: $('#direction').value, conflictPriority: $('#priority').value },
+  };
+}
+
+async function loadMapping() {
+  try {
+    mapping = await api('GET', '/api/mapping');
+    renderMapping();
+    loadOptions();
+  } catch (err) {
+    showMsg('#mapping-msg', err.message, false);
+  }
+}
+
+async function loadOptions() {
+  const hints = [];
+  try {
+    const { columns } = await api('GET', '/api/sheet-columns');
+    $('#columns-list').replaceChildren(...columns.map((c) => h('option', { value: c })));
+  } catch (err) { hints.push(`Không tải được danh sách cột từ Sheet (${err.message})`); }
+  try {
+    const { fields } = await api('GET', '/api/bitrix-fields');
+    $('#fields-list').replaceChildren(...fields.map((f) => h('option', { value: f.id, label: `${f.title} (${f.type}${f.multiple ? ', nhiều giá trị' : ''})` })));
+  } catch (err) { hints.push(`Không tải được danh sách trường Bitrix24 (${err.message})`); }
+  if (hints.length) $('#options-hint').textContent = hints.join('. ') + '. Vẫn có thể nhập tay.';
+}
+
+$('#add-rule').addEventListener('click', () => $('#rules').append(ruleRow({})));
+$('#reload-mapping').addEventListener('click', () => { renderMapping(); showMsg('#mapping-msg', ''); });
+$('#save-mapping').addEventListener('click', async () => {
+  try {
+    const result = await api('PUT', '/api/mapping', collectMapping());
+    mapping = result.mapping;
+    renderMapping();
+    showMsg('#mapping-msg', 'Đã lưu. Cấu hình mới được áp dụng từ lần đồng bộ tiếp theo.', true);
+  } catch (err) {
+    showMsg('#mapping-msg', `Chưa lưu được: ${err.message}`, false);
+  }
+});
+
+// ---------- Logs ----------
+async function loadLogs() {
+  const { lines } = await api('GET', '/api/logs?limit=500');
+  const level = $('#log-level').value;
+  const filtered = level ? lines.filter((l) => new RegExp(` (${level}) `).test(l)) : lines;
+  const pre = $('#logs');
+  const atBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
+  pre.replaceChildren(...(filtered.length ? filtered : ['Chưa có log']).map((line) => h('div', {
+    className: / ERROR /.test(line) ? 'log-error' : / WARN /.test(line) ? 'log-warn' : '',
+  }, line)));
+  if (atBottom) pre.scrollTop = pre.scrollHeight;
+}
+$('#log-level').addEventListener('change', () => loadLogs().catch(() => {}));
+
+// ---------- Refresh loop ----------
+function refresh() {
+  // Status also drives the header badge, so it is refreshed on every tab.
+  loadStatus().catch((err) => showMsg('#sync-msg', err.message, false));
+  if (currentTab === 'logs') loadLogs().catch((err) => { $('#logs').textContent = err.message; });
+}
+openTab(['overview', 'mapping', 'logs'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'overview');
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

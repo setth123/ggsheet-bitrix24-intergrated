@@ -1,0 +1,13 @@
+services:
+  sync:
+    build: .
+    env_file: .env
+    environment:
+      GOOGLE_SERVICE_ACCOUNT_FILE: /app/credentials/service-account.json
+    volumes:
+      - ./credentials:/app/credentials:ro
+      - ./config:/app/config        # ghi được: admin panel lưu mapping.json
+      - ./logs:/app/logs
+    ports:
+      - "3000:3000"
+    restart: unless-stopped

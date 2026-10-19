@@ -1,0 +1,24 @@
+{
+  "name": "ggsheet-bitrix24-sync",
+  "version": "1.0.0",
+  "description": "Đồng bộ leads từ Google Sheets sang Bitrix24 CRM",
+  "type": "module",
+  "main": "src/cli.js",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "sync": "node src/cli.js sync",
+    "start": "node src/cli.js serve",
+    "test": "node --test",
+    "coverage": "c8 --include=src --exclude=src/cli.js --reporter=text --check-coverage --lines 70 node --test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@googleapis/sheets": "^14.0.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "c8": "^11.0.0"
+  }
+}
