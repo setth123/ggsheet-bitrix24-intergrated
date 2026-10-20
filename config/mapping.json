@@ -34,7 +34,6 @@
     "conflictPriority": "bitrix"
   },
   "defaults": {
-    "CURRENCY_ID": "VND",
     "SOURCE_ID": "OTHER"
   },
   "statusColumns": {

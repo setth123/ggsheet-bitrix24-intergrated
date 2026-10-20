@@ -37,7 +37,7 @@ test('mapRow maps columns, applies defaults and builds TITLE', () => {
   assert.equal(fields.OPPORTUNITY, 1000);
   assert.equal(fields.STATUS_ID, 'NEW');
   assert.equal(fields.ASSIGNED_BY_ID, 1);
-  assert.equal(fields.CURRENCY_ID, 'VND');
+  assert.equal(fields.SOURCE_ID, 'OTHER');
   assert.equal(fields.TITLE, 'An - ABC');
 });
 

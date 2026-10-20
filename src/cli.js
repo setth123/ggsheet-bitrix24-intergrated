@@ -70,6 +70,8 @@ async function main(command) {
     webhookDelayMs: config.bitrix.webhookDebounceMs,
   }).listen(config.port, () => {
     logger.info(`Server chạy ở cổng ${config.port} (admin: http://localhost:${config.port}/), lịch đồng bộ "${config.schedule}" (${config.timezone})`);
+    // Cron only fires at the next matching time (e.g. :00/:15/:30/:45), so sync once right away.
+    if (config.syncOnStart) runner.run('startup');
   });
 }
 

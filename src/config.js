@@ -77,6 +77,7 @@ export function loadConfig(env = process.env) {
       baseDelayMs: Number(env.RETRY_BASE_DELAY_MS || 1000),
     },
     schedule: env.SYNC_CRON || '*/15 * * * *',
+    syncOnStart: env.SYNC_ON_START !== 'false',
     timezone: env.TZ || 'Asia/Ho_Chi_Minh',
     port: Number(env.PORT || 3000),
     adminToken: env.ADMIN_TOKEN || '',

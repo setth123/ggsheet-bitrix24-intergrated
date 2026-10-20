@@ -19,7 +19,13 @@ test('loadConfig reads env vars and mapping file', () => {
   assert.equal(config.google.sheetName, 'Leads');
   assert.equal(config.schedule, '0 * * * *');
   assert.equal(config.retry.retries, 3);
+  assert.equal(config.syncOnStart, true);
   assert.equal(config.mapping.fields.length, mapping.fields.length);
+});
+
+test('SYNC_ON_START=false disables the startup sync', () => {
+  const config = loadConfig({ GOOGLE_SHEET_ID: 'a', BITRIX_WEBHOOK_URL: 'x', SYNC_ON_START: 'false' });
+  assert.equal(config.syncOnStart, false);
 });
 
 test('loadConfig reports missing env vars and bad mapping files', () => {

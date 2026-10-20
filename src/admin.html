@@ -141,7 +141,7 @@
 
     <div class="card">
       <h2>Giá trị mặc định</h2>
-      <p class="muted">Gửi kèm mọi lead, mỗi dòng một giá trị dạng <code>TRƯỜNG=giá trị</code>, ví dụ <code>CURRENCY_ID=VND</code>.</p>
+      <p class="muted">Gửi kèm mọi lead, mỗi dòng một giá trị dạng <code>TRƯỜNG=giá trị</code>, ví dụ <code>SOURCE_ID=WEB</code>.</p>
       <textarea id="defaults" rows="3"></textarea>
     </div>
 
@@ -176,7 +176,7 @@ const STAT_LABELS = {
   created: 'Tạo mới', updated: 'Cập nhật', duplicates: 'Trùng (đã gộp)', pulled: 'Cập nhật từ Bitrix24',
   conflicts: 'Xung đột', skipped: 'Không đổi', failed: 'Lỗi',
 };
-const TRIGGERS = { cli: 'CLI', http: 'Thủ công', schedule: 'Theo lịch', webhook: 'Webhook Bitrix24' };
+const TRIGGERS = { cli: 'CLI', http: 'Thủ công', schedule: 'Theo lịch', webhook: 'Webhook Bitrix24', startup: 'Khi khởi động' };
 const TYPES = { string: 'Văn bản', email: 'Email', phone: 'Số điện thoại', number: 'Số', date: 'Ngày (dd/mm/yyyy)', enum: 'Danh sách (enum)' };
 
 /** Creates a DOM element; children are appended as text nodes (safe against HTML injection). */

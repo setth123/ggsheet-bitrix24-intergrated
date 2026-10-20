@@ -154,6 +154,7 @@ cp .env.example .env     # rồi điền giá trị
 | `WEBHOOK_DEBOUNCE_MS` | `3000` | Gộp các sự kiện webhook đến dồn dập thành 1 lần đồng bộ |
 | `MAPPING_FILE` | `config/mapping.json` | File mapping + chiều đồng bộ (admin panel ghi vào file này) |
 | `SYNC_CRON` | `*/15 * * * *` | Lịch chạy: `*/15 * * * *` mỗi 15 phút, `0 * * * *` mỗi giờ, `0 8 * * *` 8h sáng hằng ngày |
+| `SYNC_ON_START` | `true` | Đồng bộ ngay 1 lần khi `npm start`. Cron chỉ chạy ở mốc kế tiếp (với `*/15` là :00, :15, :30, :45), không tính từ lúc khởi động |
 | `TZ` | `Asia/Ho_Chi_Minh` | Múi giờ của lịch cron |
 | `RETRY_MAX` / `RETRY_BASE_DELAY_MS` | `3` / `1000` | Số lần retry và thời gian chờ cơ sở |
 | `PORT` | `3000` | Cổng HTTP |
@@ -182,7 +183,7 @@ cp .env.example .env     # rồi điền giá trị
     { "column": "Ghi chú", "field": "COMMENTS", "maxLength": 2000 }
   ],
   "sync": { "direction": "two-way", "conflictPriority": "bitrix" },  // hoặc "one-way" / "sheet"
-  "defaults": { "CURRENCY_ID": "VND" },          // giá trị cố định gửi kèm mọi lead
+  "defaults": { "SOURCE_ID": "OTHER" },         // giá trị cố định gửi kèm mọi lead
   "statusColumns": { "status": "...", "leadId": "...", "syncedAt": "...", "error": "...", "hash": "..." }
 }
 ```
@@ -217,7 +218,7 @@ Có thể sửa tất cả các mục này trên admin panel ([mục 5.3](#53-ad
 
 ```bash
 npm run sync        # đồng bộ 1 lần rồi thoát (exit code 1 nếu lỗi): dùng cho trigger thủ công / cron hệ thống
-npm start           # server HTTP + đồng bộ tự động theo SYNC_CRON
+npm start           # server HTTP + admin panel + đồng bộ ngay 1 lần, sau đó theo SYNC_CRON
 ```
 
 ### Docker
@@ -349,6 +350,7 @@ Test dùng fake in-memory cho Google Sheets và Bitrix24, nên không cần cred
 | `Unable to parse range` | `GOOGLE_SHEET_NAME` không khớp tên tab |
 | `Không tìm thấy cột bắt buộc "..."` | Tiêu đề cột trong Sheet khác `column` trong `mapping.json` (kiểm tra dấu, khoảng trắng) |
 | `expired_token` / `insufficient_scope` / `401` từ Bitrix | Webhook bị xoá hoặc thiếu quyền CRM, tạo lại webhook |
+| `The value of "Currency" is incorrect` | Portal chưa có tiền tệ đang gửi (`CURRENCY_ID` trong `defaults`). Bỏ `CURRENCY_ID` để dùng tiền tệ gốc của portal, hoặc thêm tiền tệ đó trong Bitrix24 → CRM → Settings → Currencies |
 | `QUERY_LIMIT_EXCEEDED` lặp lại | Tăng `BITRIX_MIN_INTERVAL_MS` (ví dụ 1000) hoặc giãn `SYNC_CRON` |
 | Hàng báo `giá trị "..." không hợp lệ (cho phép: ...)` | Giá trị enum chưa có trong `values` của mapping: sửa Sheet hoặc thêm vào mapping |
 | `Không đọc được lead #ID` | Lead đã bị xoá/gộp trên Bitrix: xoá ô `Lead ID Bitrix24` của hàng đó để tạo lại (hoặc nhận diện trùng) |
